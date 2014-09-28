@@ -48,7 +48,7 @@
 
 import sys, re, math
 
-# Load terminal colors in order
+# List of xterm-256color colors in RGB. Index is terminal code.
 TERM_COLORS = [
     0x000000,
     0x800000,
@@ -308,8 +308,6 @@ TERM_COLORS = [
     0xeeeeee,
 ]
 
-TERM_COLORS.__doc__ = "List of xterm-256color colors in RGB."
-
 # Trivial helper functions
 COL24_TO_RGB = lambda color: (color >> 16, (color & 0xFFFF) >> 8, color & 0xFF)
 COL12_TO_RGB = lambda color: (color >>  8, (color & 0x00FF) >> 4, color & 0x0F)
@@ -446,6 +444,7 @@ if __name__ == '__main__':
             '\x1b[48;5;15m\x1b[38;5;%dmFORECOLOR\x1b[00m' % item[0] +
             '\x1b[48;5;0m\x1b[38;5;%dmFORECOLOR\x1b[00m\t' % item[0] +
             '\x1b[38;5;15m\x1b[48;5;%dmBACKGROUND\x1b[00m' % item[0] +
-            '\x1b[38;5;0m\x1b[48;5;%dmBACKGROUND\x1b[00m' % item[0]
+            '\x1b[38;5;0m\x1b[48;5;%dmBACKGROUND\x1b[00m\t' % item[0] +
+            '\x1b[38;5;%dm\x1b[48;5;%dmOVERLAPPING\x1b[00m' % (item[0], item[0])
             )
         
