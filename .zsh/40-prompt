@@ -1,3 +1,4 @@
 #! /bin/zsh
 
+# Get current directory as array
 PROMPT="%{${fg[red]}%}%30<…<%~%<< » "
