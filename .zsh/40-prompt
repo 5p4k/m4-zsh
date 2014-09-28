@@ -43,8 +43,11 @@ prompt_usr() {
 prompt_dir() {
 	segment $dir_fg $dir_bg
 	echo -n "%30<…<%~%<<"
+	# Check if writable
+	if ! [[ -w . ]]; then
+		echo -n " \ue0a2"	# locket
+	fi
 }
-
 
 build_prompt() {
 	local cur_bg=-1
@@ -55,4 +58,7 @@ build_prompt() {
 	segment -1
 }
 
-PROMPT="$(build_prompt)"
+
+precmd() {
+	PROMPT="$(build_prompt)"
+}
