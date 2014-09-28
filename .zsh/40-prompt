@@ -1,4 +1,58 @@
 #! /bin/zsh
 
-# Get current directory as array
-PROMPT="%{${fg[red]}%}%30<…<%~%<< » "
+local dir_fg dir_bg usr_fg usr_bg
+
+dir_fg=022
+dir_bg=193
+usr_fg=006
+usr_bg=023
+
+segment() {
+	readonly separator='\ue0b0'
+
+	# $1: new foreground
+	# $2: new background
+
+	if [[ $cur_bg -eq -1 ]]; then
+
+		# BEGIN, just set the color
+		echo -n "%{%F{$1}%}%{%K{$2}%} "
+		cur_bg=$2
+
+	elif [[ $1 -eq -1 ]]; then
+
+		# END, deactivate and clear
+		echo -n " %{%F{$cur_bg}%}%{%k%}$separator%{%f%} "
+		cur_bg=-1
+
+	else
+
+		# INTERMEDIATE!
+		echo -n " %{%F{$cur_bg}%}%{%K{$2}%}$separator%{%F{$1}%} "
+		cur_bg=$2
+
+	fi
+}
+
+
+prompt_usr() {
+	segment $usr_fg $usr_bg
+	echo -n "%n"
+}
+
+prompt_dir() {
+	segment $dir_fg $dir_bg
+	echo -n "%30<…<%~%<<"
+}
+
+
+build_prompt() {
+	local cur_bg=-1
+
+	prompt_usr
+	prompt_dir
+
+	segment -1
+}
+
+PROMPT="$(build_prompt)"
