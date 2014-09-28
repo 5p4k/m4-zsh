@@ -265,11 +265,35 @@ TERM_COLORS = [
 COL24_TO_RGB = lambda color: (color >> 16, (color & 0xFFFF) >> 8, color & 0xFF)
 COL12_TO_RGB = lambda color: (color >>  8, (color & 0x00FF) >> 4, color & 0x0F)
 
-def COL_DIST(col1, col2):
+def COL_DIST2(col1, col2):
 	r, g, b = (col1[i] - col2[i] for i in range(0, 3))
 	return math.sqrt(r * r + g * g + b * b)
 
+def COL_DIST1(col1, col2):
+	r, g, b = (col1[i] - col2[i] for i in range(0, 3))
+	return abs(r) + abs(g) + abs(b)
+
+def COL_DISTINF(col1, col2):
+	r, g, b = (col1[i] - col2[i] for i in range(0, 3))
+	return max(abs(r), abs(g), abs(b))
+
+
 if __name__ == '__main__':
+
+	# Default distance
+	distance = COL_DIST2
+
+	# Choose the distance function
+	if len(sys.argv) > 2:
+		if sys.argv[2] == '-d2':
+			distance = COL_DIST2
+		elif sys.argv[2] == '-d1':
+			distance = COL_DIST1
+		elif sys.argv[2] == '-dinf':
+			distance = COL_DISTINF
+		else:
+			print('Unrecognized option: ' + sys.argv[2])
+
 
 	# String to color
 	def parse_color(color):
@@ -295,16 +319,19 @@ if __name__ == '__main__':
 	color = parse_color(color)
 
 
+
 	# Now we have a color vector, compute differences
-	differences = [(i, TERM_COLORS[i], COL_DIST(COL24_TO_RGB(TERM_COLORS[i]), color)) for i in range(0, len(TERM_COLORS))]
+	differences = [(i, TERM_COLORS[i], distance(COL24_TO_RGB(TERM_COLORS[i]), color)) for i in range(0, len(TERM_COLORS))]
 	differences = sorted(differences, key=lambda item: item[2])
 
 	# Print out the best 3 candidates
 	for i in range(0, 3):
 		item  = differences[i]
 		print(
-			'Code: %03d (#%06X)\tDistance: %0.2f\t' % item +
-			'\x1b[38;5;%dmFORECOLOR\x1b[00m ' % item[0] +
-			'\x1b[48;5;%dmBACKGROUND\x1b[00m' % item[0]
+			'Code: %03d (#%06X)\tDistance: %0.2f\t\t' % item +
+			'\x1b[48;5;15m\x1b[38;5;%dmFORECOLOR\x1b[00m' % item[0] +
+			'\x1b[48;5;0m\x1b[38;5;%dmFORECOLOR\x1b[00m\t' % item[0] +
+			'\x1b[38;5;15m\x1b[48;5;%dmBACKGROUND\x1b[00m' % item[0] +
+			'\x1b[38;5;0m\x1b[48;5;%dmBACKGROUND\x1b[00m' % item[0]
 			)
 		
