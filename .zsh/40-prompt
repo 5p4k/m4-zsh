@@ -1,11 +1,27 @@
 #! /bin/zsh
 
-local dir_fg dir_bg usr_fg usr_bg
+typeset -Ag M4PROMPT
+
+#	KEY			MEANING
+#	------------------------------------------------
+# 	readonly	Current folder has now write access
+#	git			Current folder has git information
+#
+
+M4PROMPT=(readonly -1 git -1)
+
+# Use ZSH hooks for handling the prompt change
+autoload -U add-zsh-hook
+
+# Style information
+local dir_fg dir_bg usr_fg usr_bg su_fg su_bg
 
 dir_fg=022
 dir_bg=193
 usr_fg=006
 usr_bg=023
+su_fg=210
+su_bg=052
 
 segment() {
 	readonly separator='\ue0b0'
@@ -36,8 +52,13 @@ segment() {
 
 
 prompt_usr() {
+	# Choose between root and normal user scheme
+	echo -n "%(!."
+	segment $su_fg $su_bg
+	echo -n "."
 	segment $usr_fg $usr_bg
-	echo -n "%n"
+	echo -n ")%n"
+
 }
 
 prompt_dir() {
