@@ -79,6 +79,7 @@ segment_user() {
 
     echo -n "%n"
 
+    return 0
 }
 
 
@@ -93,6 +94,7 @@ segment_dir() {
     # Check if writable
     [[ $M4_PROMPTSTATE[readonly] -eq 1 ]] && echo -n " \ue0a2"   # locket
 
+    return 0
 }
 
 
@@ -164,34 +166,52 @@ segment_color() {
 
 build_prompt() {
 
-    local len=${#M4_SEGMENTS[@]}
+    local last body
 
-    if [[ $len -gt 0 ]]; then
+    for current in $M4_SEGMENTS; do
 
-        segment_color $M4_SEGMENTS[1] fgbg
-        echo -n " $(segment $M4_SEGMENTS[1]) "
+        # Extract the value
+        body=$(segment $current)
 
-        # Loop on the others
-        if [[ $len -gt 1 ]]; then
+        # Check if the return code is ok
+        if [[ $? -eq 0 ]]; then
 
-            for i in {2..$len}; do
+            # Ok this segment must be drawn.
+            if [[ -n $last ]]; then
 
                 # Draw the separator
-                segment_color $M4_SEGMENTS[$(( $i - 1 ))] bginv
-                segment_color $M4_SEGMENTS[$i] bg
+                segment_color $last bginv
+                segment_color $current bg
                 echo -n $M4_SCHEME[separator]
+                segment_color $current fg
 
-                # Draw the text
-                segment_color $M4_SEGMENTS[$i] fg
-                echo -n " $(segment $M4_SEGMENTS[$i]) "
+            else
 
-            done
+                # Just set the colors
+                segment_color $current fgbg
+
+            fi
+
+            # Print the body
+            echo -n " $body "
+
+            # Save it
+            last=$current
 
         fi
 
-        # Finish it!
-        segment_color $M4_SEGMENTS[$len] bginv
+    done
+
+    # Finish it!
+    if [[ -n $last ]]; then
+
+        segment_color $last bginv
         echo -n "%{%k%}$M4_SCHEME[separator]%{%f%} "
+
+    else
+
+        # Echo an error prompt
+        echo -n "NOSEG - %m%# "
 
     fi
 
