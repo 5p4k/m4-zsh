@@ -1,85 +1,209 @@
 #! /bin/zsh
 
-typeset -Ag M4PROMPT
+typeset -Ag M4_PROMPTSTATE  # Holds prompt state, to decide whether to chg it
+typeset -g  M4_SEGMENTS     # Segments configuration
+typeset -A  M4_SCHEME       # Color scheme
 
-#	KEY			MEANING
-#	------------------------------------------------
-# 	readonly	Current folder has now write access
-#	git			Current folder has git information
+
+
+
+# =========== STYLES SETUP =====================================================
+
+M4_SEGMENTS=(
+    user
+    dir
+)
+
+M4_SCHEME=(
+
+    dir_fg  022         # Current directory fg
+    dir_bg  193         # Current directory bg
+
+    usr_fg  006         # Current user fg
+    usr_bg  023         # Current user bg
+
+    su_fg   210         # Superuser fg
+    su_bg   052         # Superuser bg
+
+    separator '\ue0b0'  # Powerline |>
+
+)
+
+
+
+
+
+
+# =========== M4_PROMPTSTATE ===================================================
+#   
+#   KEY         MEANING
+#   ------------------------------------------------
+#   readonly    Current folder has now write access
+#   git         Current folder has git information
 #
 
-M4PROMPT=(readonly -1 git -1)
+M4_PROMPTSTATE=(
+    readonly    -1
+    git         -1
+)
 
-# Use ZSH hooks for handling the prompt change
-autoload -U add-zsh-hook
 
-# Style information
-local dir_fg dir_bg usr_fg usr_bg su_fg su_bg
 
-dir_fg=022
-dir_bg=193
-usr_fg=006
-usr_bg=023
-su_fg=210
-su_bg=052
+
+
+
+
+# =========== SEGMENTS =========================================================
+
+segment_user_color() {
+
+    # Redefine color scheme to obtain custom colors
+    case $1 in
+        fg) # foreground
+            echo -n "%(!.%{%F{$M4_SCHEME[su_fg]}%}.%{%F{$M4_SCHEME[usr_fg]}%})"
+            ;;
+        bg) # background
+            echo -n "%(!.%{%K{$M4_SCHEME[su_bg]}%}.%{%K{$M4_SCHEME[usr_bg]}%})"
+            ;;
+        bginv) # background as foreground
+            echo -n "%(!.%{%F{$M4_SCHEME[su_bg]}%}.%{%F{$M4_SCHEME[usr_bg]}%})"
+            ;;
+        fgbg)  # backgound and foreground
+            echo -n "%(!.%{%F{$M4_SCHEME[su_fg]}%}%{%K{$M4_SCHEME[su_bg]}%}.%{%F{$M4_SCHEME[usr_fg]}%}%{%K{$M4_SCHEME[usr_bg]}%})"
+            ;;
+    esac
+
+}
+
+segment_user() {
+
+    echo -n "%n"
+
+}
+
+
+
+
+
+
+segment_dir() {
+
+   echo -n "%30<…<%~%<<"
+
+    # Check if writable
+    [[ $M4_PROMPTSTATE[readonly] -eq 1 ]] && echo -n " \ue0a2"   # locket
+
+}
+
+
+
+
+
+# =========== SEGMENT DRAWING FUNC =============================================
+
 
 segment() {
-	readonly separator='\ue0b0'
+    # Takes the id of the segment and outputs the body, by calling
+    # `segment_${1}`.
 
-	# $1: new foreground
-	# $2: new background
+    if whence segment_${1} > /dev/null; then
 
-	if [[ $cur_bg -eq -1 ]]; then
+        segment_${1}
 
-		# BEGIN, just set the color
-		echo -n "%{%F{$1}%}%{%K{$2}%} "
-		cur_bg=$2
+    fi
+}
 
-	elif [[ $1 -eq -1 ]]; then
+segment_color() {
+    # Takes the id of the segment as input and a code for which color to use
+    # and applies it.
+    # If a function `segment_${1}_color` is defined, that is called instead.
+    #
+    #   $1  id of the segment
+    #   $2  one of the following:
+    #       - `fg`: foreground
+    #       - `bg`: background
+    #       - `bginv`: background as foreground
+    #       - `fgbg`: background and foreground
+    #
+    # The function will look up M4_SCHEME for entries in the form `${1}_fg` and
+    # `${1}_bg` to extract the color.
 
-		# END, deactivate and clear
-		echo -n " %{%F{$cur_bg}%}%{%k%}$separator%{%f%} "
-		cur_bg=-1
 
-	else
+    # Check if a custom function is available
+    if whence segment_${1}_color > /dev/null; then
 
-		# INTERMEDIATE!
-		echo -n " %{%F{$cur_bg}%}%{%K{$2}%}$separator%{%F{$1}%} "
-		cur_bg=$2
+        # Custom function!
+        segment_${1}_color $2
 
-	fi
+    else
+
+        case $2 in
+            fg) # foreground
+                [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[$1_fg]}%}"
+                ;;
+            bg) # background
+                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[$1_bg]}%}"
+                ;;
+            bginv) # background as foreground
+                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%F{$M4_SCHEME[$1_bg]}%}"
+                ;;
+            fgbg)  # backgound and foreground
+                #segment_color $1 fg
+                #segment_color $1 bg
+                [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[$1_fg]}%}"
+                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[$1_bg]}%}"
+                ;;
+        esac
+
+    fi
+
 }
 
 
-prompt_usr() {
-	# Choose between root and normal user scheme
-	echo -n "%(!."
-	segment $su_fg $su_bg
-	echo -n "."
-	segment $usr_fg $usr_bg
-	echo -n ")%n"
 
-}
-
-prompt_dir() {
-	segment $dir_fg $dir_bg
-	echo -n "%30<…<%~%<<"
-	# Check if writable
-	if ! [[ -w . ]]; then
-		echo -n " \ue0a2"	# locket
-	fi
-}
 
 build_prompt() {
-	local cur_bg=-1
 
-	prompt_usr
-	prompt_dir
+    local len=${#M4_SEGMENTS[@]}
 
-	segment -1
+    if [[ $len -gt 0 ]]; then
+
+        segment_color $M4_SEGMENTS[1] fgbg
+        echo -n " $(segment $M4_SEGMENTS[1]) "
+
+        # Loop on the others
+        if [[ $len -gt 1 ]]; then
+
+            for i in {2..$len}; do
+
+                # Draw the separator
+                segment_color $M4_SEGMENTS[$(( $i - 1 ))] bginv
+                segment_color $M4_SEGMENTS[$i] bg
+                echo -n $M4_SCHEME[separator]
+
+                # Draw the text
+                segment_color $M4_SEGMENTS[$i] fg
+                echo -n " $(segment $M4_SEGMENTS[$i]) "
+
+            done
+
+        fi
+
+        # Finish it!
+        segment_color $M4_SEGMENTS[$len] bginv
+        echo -n "%{%k%}$M4_SCHEME[separator]%{%f%} "
+
+    fi
+
 }
 
 
-precmd() {
-	PROMPT="$(build_prompt)"
-}
+
+
+PROMPT=$(build_prompt)
+
+
+
+
+# Use ZSH hooks for handling the prompt change
+#autoload -U add-zsh-hook
