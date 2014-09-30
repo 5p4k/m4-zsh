@@ -238,9 +238,9 @@ m4_prompt_hook() {
     # Check if anything is different
     for key in "${(@k)newprompt}"; do
         
-        if [[ -n $M4_PROMPTSTATE[$key] ]] ||
-           [[ $M4_PROMPTSTATE[$key] -ne $newprompt[$key] ]]; then
-
+        if ! [[ -n $M4_PROMPTSTATE[$key] ]] ||
+           [[ $M4_PROMPTSTATE[$key] -ne $newprompt[$key] ]] ||
+           ! [[ $M4_PROMPTSTATE[$key] == $newprompt[$key] ]]; then
             # Set the flag & copy
             update=1
             M4_PROMPTSTATE[$key]=$newprompt[$key]
