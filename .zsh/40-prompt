@@ -45,7 +45,7 @@ M4_SCHEME=(
 #   KEY         MEANING
 #   ----------------------------------------------------------------------------
 #   readonly    Current folder has now write access (0 <=> rw, 1 <=> ro)
-#   git         Current folder has git information (0-1)
+#   git         0 - no git info; 1 - inside git work tree; 2 - detached head
 #   branch      Git branch
 #
 
@@ -62,13 +62,26 @@ m4_load_promptstate() {
     if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
 
         # Get the branch name. This rev-parse is extremely useful.
-        retval[branch]=$(git rev-parse --abbrev-ref HEAD)
         retval[git]=1
+
+        # But it might be deatched!
+        if $(git symbolic-ref HEAD &>/dev/null); then
+            retval[git]=1
+            retval[branch]=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+        else
+            retval[git]=2 # Detached!
+            retval[branch]="$(git show-ref --head -s --abbrev |head -n1 2> /dev/null)"
+        fi
+
+        # Make sure the branch contains something or the copy onto $1 will fail
+        if ! [[ -n $retval[branch] ]]; then
+            retval[branch]="none"
+        fi
 
     else
 
         retval[git]=0
-        retval[branch]="null"
+        retval[branch]="none"
 
     fi
 
@@ -116,12 +129,21 @@ segment_git() {
     # Return failure if we aren't inside a git work tree
 
     if [[ $M4_PROMPTSTATE[git] -eq 0 ]]; then
+
         return 1
+
+    elif [[ $M4_PROMPTSTATE[git] -eq 1 ]]; then
+
+        # Print branch symbol and branch name
+        echo "\ue0a0 $M4_PROMPTSTATE[branch]"
+
+    elif [[ $M4_PROMPTSTATE[git] -eq 2 ]]; then
+
+        # Print detached head symbol and ref code
+        echo "\u27a6 $M4_PROMPTSTATE[branch]"
+
     fi
-
-    # Otherwise print branch
-    echo "\ue0a0 $M4_PROMPTSTATE[branch]"
-
+    
     return 0
 }
 
