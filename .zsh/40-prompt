@@ -42,13 +42,20 @@ M4_SCHEME=(
 #   git         Current folder has git information
 #
 
-M4_PROMPTSTATE=(
-    readonly    -1
-    git         -1
-)
+m4_load_promptstate() {
+    # Loads the prompt into $1
+
+    typeset -A retval
+
+    [[ -w . ]] && retval[readonly]=0 || retval[readonly]=1
+    
+    # TODO Replace this with proper git command
+    [[ -d ./.git ]] && retval[git]=1 || retval[git]=0
 
 
-
+    # Now copy onto $1
+    set -A $1 ${(kv)retval}
+}
 
 
 
@@ -104,7 +111,7 @@ segment_dir() {
 # =========== SEGMENT DRAWING FUNC =============================================
 
 
-segment() {
+m4_segment() {
     # Takes the id of the segment and outputs the body, by calling
     # `segment_${1}`.
 
@@ -115,7 +122,7 @@ segment() {
     fi
 }
 
-segment_color() {
+m4_segment_color() {
     # Takes the id of the segment as input and a code for which color to use
     # and applies it.
     # If a function `segment_${1}_color` is defined, that is called instead.
@@ -162,16 +169,14 @@ segment_color() {
 }
 
 
-
-
-build_prompt() {
+m4_build_prompt() {
 
     local last body
 
     for current in $M4_SEGMENTS; do
 
         # Extract the value
-        body=$(segment $current)
+        body=$(m4_segment $current)
 
         # Check if the return code is ok
         if [[ $? -eq 0 ]]; then
@@ -180,15 +185,15 @@ build_prompt() {
             if [[ -n $last ]]; then
 
                 # Draw the separator
-                segment_color $last bginv
-                segment_color $current bg
+                m4_segment_color $last bginv
+                m4_segment_color $current bg
                 echo -n $M4_SCHEME[separator]
-                segment_color $current fg
+                m4_segment_color $current fg
 
             else
 
                 # Just set the colors
-                segment_color $current fgbg
+                m4_segment_color $current fgbg
 
             fi
 
@@ -205,7 +210,7 @@ build_prompt() {
     # Finish it!
     if [[ -n $last ]]; then
 
-        segment_color $last bginv
+        m4_segment_color $last bginv
         echo -n "%{%k%}$M4_SCHEME[separator]%{%f%} "
 
     else
@@ -220,10 +225,40 @@ build_prompt() {
 
 
 
-PROMPT=$(build_prompt)
+
+# =========== HOOK =============================================================
+
+m4_prompt_hook() {
+    typeset -A newprompt
+    local update=0
+
+    # Update it
+    m4_load_promptstate newprompt
+
+    # Check if anything is different
+    for key in "${(@k)newprompt}"; do
+        
+        if [[ -n $M4_PROMPTSTATE[$key] ]] ||
+           [[ $M4_PROMPTSTATE[$key] -ne $newprompt[$key] ]]; then
+
+            # Set the flag & copy
+            update=1
+            M4_PROMPTSTATE[$key]=$newprompt[$key]
+        fi
+
+    done
+
+    if [[ $update -eq 1 ]]; then
+        PROMPT=$(m4_build_prompt)
+    fi
+
+}
 
 
 
 
 # Use ZSH hooks for handling the prompt change
-#autoload -U add-zsh-hook
+autoload -U add-zsh-hook
+
+add-zsh-hook precmd m4_prompt_hook
+
