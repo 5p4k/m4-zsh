@@ -44,7 +44,7 @@ M4_SCHEME=(
 #   ----------------------------------------------------------------------------
 #   readonly    Current folder has now write access (0 <=> rw, 1 <=> ro)
 #   git         Current folder has git information (0-1)
-#   branch   Git branch
+#   branch      Git branch
 #
 
 m4_load_promptstate() {
@@ -73,6 +73,7 @@ m4_load_promptstate() {
 # =========== SEGMENTS =========================================================
 
 segment_user_color() {
+    # We want super user to use a different color scheme
 
     # Redefine color scheme to obtain custom colors
     case $1 in
@@ -93,6 +94,7 @@ segment_user_color() {
 }
 
 segment_user() {
+    # Print just %n aka username
 
     echo -n "%n"
 
@@ -102,11 +104,13 @@ segment_user() {
 
 
 segment_git() {
+    # Return failure if we aren't inside a git work tree
 
     if [[ $M4_PROMPTSTATE[git] -eq 0 ]]; then
         return 1
     fi
 
+    # Otherwise print branch
     echo "\ue0a0 $M4_PROMPTSTATE[branch]"
 
     return 0
@@ -116,9 +120,10 @@ segment_git() {
 
 segment_dir() {
 
-   echo -n "%30<…<%~%<<"
+    # Trim the directory
+    echo -n "%30<…<%~%<<"
 
-    # Check if writable
+    # Check if writable and print a padlock
     [[ $M4_PROMPTSTATE[readonly] -eq 1 ]] && echo -n " \ue0a2"   # locket
 
     return 0
@@ -190,6 +195,10 @@ m4_segment_color() {
 
 
 m4_build_prompt() {
+    # Prints the final prompt.
+    # Enumerate `M4_SEGMENTS`. For each segment, evaluate the body. If the
+    # return code is 0, then display it by drawing the separator. Otherwise,
+    # go to the next.
 
     local last body
 
@@ -249,6 +258,8 @@ m4_build_prompt() {
 # =========== HOOK =============================================================
 
 m4_prompt_hook() {
+    # PRECMD hook. Compute the new prompt state, and if it differs, then
+    # rebuild the prompt.
     typeset -A newprompt
     local update=0
 
