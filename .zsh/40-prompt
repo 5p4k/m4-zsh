@@ -12,6 +12,7 @@ typeset -A  M4_SCHEME       # Color scheme
 M4_SEGMENTS=(
     user
     dir
+    git
 )
 
 M4_SCHEME=(
@@ -25,6 +26,9 @@ M4_SCHEME=(
     su_fg   210         # Superuser fg
     su_bg   052         # Superuser bg
 
+    git_bg  058
+    git_fg  229
+
     separator '\ue0b0'  # Powerline |>
 
 )
@@ -37,21 +41,27 @@ M4_SCHEME=(
 # =========== M4_PROMPTSTATE ===================================================
 #   
 #   KEY         MEANING
-#   ------------------------------------------------
-#   readonly    Current folder has now write access
-#   git         Current folder has git information
+#   ----------------------------------------------------------------------------
+#   readonly    Current folder has now write access (0 <=> rw, 1 <=> ro)
+#   git         Current folder has git information (0-1)
+#   branch   Git branch
 #
 
 m4_load_promptstate() {
     # Loads the prompt into $1
 
     typeset -A retval
+    typeset gitstatus
 
     [[ -w . ]] && retval[readonly]=0 || retval[readonly]=1
-    
-    # TODO Replace this with proper git command
-    [[ -d ./.git ]] && retval[git]=1 || retval[git]=0
 
+    $(git status -b --porcelain &> /dev/null) && retval[git]=1 || retval[git]=0
+
+    if [[ $retval[git] -eq 0 ]]; then
+        retval[branch]="none"
+    else
+        retval[branch]=$(git rev-parse --abbrev-ref HEAD)
+    fi
 
     # Now copy onto $1
     set -A $1 ${(kv)retval}
@@ -91,6 +101,16 @@ segment_user() {
 
 
 
+segment_git() {
+
+    if [[ $M4_PROMPTSTATE[git] -eq 0 ]]; then
+        return 1
+    fi
+
+    echo "\ue0a0 $M4_PROMPTSTATE[branch]"
+
+    return 0
+}
 
 
 
