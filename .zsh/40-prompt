@@ -13,23 +13,24 @@ typeset -A  M4_SCHEME       # Color scheme
 
 M4_SEGMENTS=(
     user
-    dir
     git
+    dir
 )
 
 M4_SCHEME=(
 
-    dir_fg          022         # Current directory fg
-    dir_bg          193         # Current directory bg
+    dir_fg          025
+    dir_bg          015         
     
-    usr_fg          006         # Current user fg
-    usr_bg          023         # Current user bg
+    usr_fg          153
+    usr_bg          025
     
-    su_fg           210         # Superuser fg
-    su_bg           052         # Superuser bg
+    su_fg           210
+    su_bg           052
 
     git_dirty_fg    130
     git_dirty_bg    220
+    
     git_clean_fg    022
     git_clean_bg    149
 
@@ -167,11 +168,11 @@ segment_git() {
 
 segment_dir() {
 
+    # Check if writable and print a padlock
+    [[ $M4_PROMPTSTATE[readonly] -eq 1 ]] && echo -n "\ue0a2 "   # locket
+
     # Trim the directory
     echo -n "%30<…<%~%<<"
-
-    # Check if writable and print a padlock
-    [[ $M4_PROMPTSTATE[readonly] -eq 1 ]] && echo -n " \ue0a2"   # locket
 
     return 0
 }
