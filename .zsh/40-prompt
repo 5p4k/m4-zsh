@@ -19,19 +19,21 @@ M4_SEGMENTS=(
 
 M4_SCHEME=(
 
-    dir_fg  022         # Current directory fg
-    dir_bg  193         # Current directory bg
+    dir_fg          022         # Current directory fg
+    dir_bg          193         # Current directory bg
+    
+    usr_fg          006         # Current user fg
+    usr_bg          023         # Current user bg
+    
+    su_fg           210         # Superuser fg
+    su_bg           052         # Superuser bg
 
-    usr_fg  006         # Current user fg
-    usr_bg  023         # Current user bg
+    git_dirty_fg    130
+    git_dirty_bg    220
+    git_clean_fg    022
+    git_clean_bg    149
 
-    su_fg   210         # Superuser fg
-    su_bg   052         # Superuser bg
-
-    git_bg  058
-    git_fg  229
-
-    separator '\ue0b0'  # Powerline |>
+    separator       '\ue0b0'    # Powerline |>
 
 )
 
@@ -47,6 +49,7 @@ M4_SCHEME=(
 #   readonly    Current folder has now write access (0 <=> rw, 1 <=> ro)
 #   git         0 - no git info; 1 - inside git work tree; 2 - detached head
 #   branch      Git branch
+#   dirty       1 - work tree dirty; 0 - work tree clean
 #
 
 m4_load_promptstate() {
@@ -78,10 +81,14 @@ m4_load_promptstate() {
             retval[branch]="none"
         fi
 
+        # Parse clean/dirty flag
+        $(git-clean) && retval[dirty]=0 || retval[dirty]=1
+
     else
 
         retval[git]=0
         retval[branch]="none"
+        retval[dirty]=0
 
     fi
 
@@ -93,6 +100,15 @@ m4_load_promptstate() {
 
 
 # =========== SEGMENTS =========================================================
+
+segment_git_color() {
+    # Check if clean or dirty
+    if [[ $M4_PROMPTSTATE[dirty] -eq 1 ]]; then
+        m4_segment_color git_dirty $1
+    else
+        m4_segment_color git_clean $1
+    fi
+}
 
 segment_user_color() {
     # We want super user to use a different color scheme
@@ -204,19 +220,19 @@ m4_segment_color() {
 
         case $2 in
             fg) # foreground
-                [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[$1_fg]}%}"
+                [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[${1}_fg]}%}"
                 ;;
             bg) # background
-                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[$1_bg]}%}"
+                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[${1}_bg]}%}"
                 ;;
             bginv) # background as foreground
-                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%F{$M4_SCHEME[$1_bg]}%}"
+                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%F{$M4_SCHEME[${1}_bg]}%}"
                 ;;
             fgbg)  # backgound and foreground
                 #segment_color $1 fg
                 #segment_color $1 bg
-                [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[$1_fg]}%}"
-                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[$1_bg]}%}"
+                [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[${1}_fg]}%}"
+                [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[${1}_bg]}%}"
                 ;;
         esac
 
