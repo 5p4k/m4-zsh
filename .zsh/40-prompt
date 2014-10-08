@@ -4,6 +4,7 @@
 
 typeset -Ag M4_PROMPTSTATE  # Holds prompt state, to decide whether to chg it
 typeset -g  M4_SEGMENTS     # Segments configuration
+typeset -g  M4_RSEGMENTS
 typeset -A  M4_SCHEME       # Color scheme
 
 
@@ -17,7 +18,14 @@ M4_SEGMENTS=(
     dir
 )
 
+M4_RSEGMENTS=(
+    machine
+)
+
 M4_SCHEME=(
+
+    machine_fg      052
+    machine_bg      234
 
     dir_fg          025
     dir_bg          015         
@@ -129,6 +137,15 @@ segment_user_color() {
             echo -n "%(!.%{%F{$M4_SCHEME[su_fg]}%}%{%K{$M4_SCHEME[su_bg]}%}.%{%F{$M4_SCHEME[usr_fg]}%}%{%K{$M4_SCHEME[usr_bg]}%})"
             ;;
     esac
+
+}
+
+segment_machine() {
+
+    # Print the machine name
+    echo -n "%m"
+
+    return 0
 
 }
 
@@ -299,6 +316,61 @@ m4_build_prompt() {
 
 }
 
+m4_build_rprompt() {
+    # Prints the final rprompt.
+    # Enumerate `M4_RSEGMENTS`. For each segment, evaluate the body. If the
+    # return code is 0, then display it by drawing the separator. Otherwise,
+    # go to the next.
+
+    local last body
+
+    for current in $M4_RSEGMENTS; do
+
+        # Extract the value
+        body=$(m4_segment $current)
+
+        # Check if the return code is ok
+        if [[ $? -eq 0 ]]; then
+
+            # Ok this segment must be drawn.
+            if [[ -n $last ]]; then
+
+                # Draw the separator
+                m4_segment_color $last bginv
+                m4_segment_color $current bg
+                echo -n $M4_SCHEME[separator]
+                m4_segment_color $current fg
+
+            else
+
+                # Use standout mode
+                echo -n "%S"
+                m4_segment_color $current bginv
+                echo -n $M4_SCHEME[separator]
+                echo -n "%s"
+                m4_segment_color $current fgbg
+
+            fi
+
+            # Print the body
+            echo -n " $body "
+
+            # Save it
+            last=$current
+
+        fi
+
+    done
+
+    # Finish it!
+    if [[ -n $last ]]; then
+
+        echo -n "%{%k%}%{%f%}"
+
+    fi
+
+}
+
 
 
 
@@ -328,6 +400,7 @@ m4_prompt_hook() {
 
     if [[ $update -eq 1 ]]; then
         PROMPT=$(m4_build_prompt)
+        RPROMPT=$(m4_build_rprompt)
     fi
 
 }
