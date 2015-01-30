@@ -5,4 +5,5 @@ setopt AUTO_CD
 
 setopt CORRECT
 
-alias airport='/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resources/airport'
+alias ll='ls -alG'
+alias ls='ls -G'
