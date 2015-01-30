@@ -5,5 +5,5 @@ setopt AUTO_CD
 
 setopt CORRECT
 
-alias ll='ls -AlG'
-alias ls='ls -G'
+alias ll='ls --color=always --group-directories-first -Al'
+alias ls='ls --color=always --group-directories-first'
