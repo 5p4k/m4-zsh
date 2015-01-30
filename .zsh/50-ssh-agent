@@ -24,4 +24,4 @@ else
     start_agent;
 fi
 
-https://github.com/wwalker/ssh-find-agent/blob/master/ssh-find-agent.sh
+# Source: https://github.com/wwalker/ssh-find-agent/blob/master/ssh-find-agent.sh
