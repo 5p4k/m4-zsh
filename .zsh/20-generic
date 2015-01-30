@@ -5,5 +5,5 @@ setopt AUTO_CD
 
 setopt CORRECT
 
-alias ll='ls -alG'
+alias ll='ls -AlG'
 alias ls='ls -G'
