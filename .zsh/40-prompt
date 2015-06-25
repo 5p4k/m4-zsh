@@ -46,7 +46,12 @@ M4_SCHEME=(
 
 )
 
+# No term, or < 256 color
+if ! $(echo $TERM | grep -q 256color); then
 
+    M4_SCHEME[separator]='>'
+
+fi
 
 
 
