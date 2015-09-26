@@ -1,22 +1,45 @@
 #! /bin/zsh
 
+# From http://stackoverflow.com/a/2180367/1749822
+is-git() {
+    [[ -d .git ]] || git rev-parse --git-dir > /dev/null 2>&1
+}
+
+# From http://stackoverflow.com/a/2044714/1749822
+is-git-work-tree() {
+    [[ $(git rev-parse --is-inside-work-tree) == "true" ]]
+}
+
+is-git-head-attached() {
+    git symbolic-ref HEAD &>/dev/null
+}
+
+get-git-current-commit() {
+    git show-ref --head -s --abbrev |head -n1 2> /dev/null
+}
+
+get-git-branch-name() {
+    if is-git-head-attached; then
+        git rev-parse --abbrev-ref HEAD 2> /dev/null
+    else
+        get-git-current-commit
+    fi
+}
 # Adapted from http://www.spinics.net/lists/git/msg142043.html
-git-clean () {
+is-git-clean () {
 
     # This is going to be called every PRECMD, so let's say that
     # updating the index every time we hit returns is a bit too much
     # # Update the index
     # git update-index -q --ignore-submodules --refresh
 
-    # Disallow unstaged changes in the working tree
-    if ! $(git diff-files --quiet --ignore-submodules --); then
-        return 1
+    if is-git-work-tree; then
+        # Disallow unstaged changes in the working tree &&
+        #   Disallow uncommitted changes in the index
+        if ! git diff-files --quiet --ignore-submodules -- &&
+            git diff-index --cached --quiet HEAD --ignore-submodules --; then
+            return 1
+        fi
     fi
-
-    # Disallow uncommitted changes in the index
-    if ! $(git diff-index --cached --quiet HEAD --ignore-submodules --); then
-        return 1
-    fi
-
     return 0
 }

@@ -7,57 +7,73 @@ typeset -g  M4_SEGMENTS     # Segments configuration
 typeset -g  M4_RSEGMENTS
 typeset -A  M4_SCHEME       # Color scheme
 
-
-
-
 # =========== STYLES SETUP =====================================================
 
 M4_SEGMENTS=(
-    user
     git
     dir
 )
 
 M4_RSEGMENTS=(
     machine
-)
-
-M4_SCHEME=(
-
-    machine_fg      052
-    machine_bg      234
-
-    dir_fg          025
-    dir_bg          015         
-    
-    usr_fg          153
-    usr_bg          025
-    
-    su_fg           210
-    su_bg           052
-
-    git_dirty_fg    130
-    git_dirty_bg    220
-    
-    git_clean_fg    022
-    git_clean_bg    149
-
-    separator       '\ue0b0'    # Powerline |>
-
+    user
 )
 
 # No term, or < 256 color
 if ! $(echo $TERM | grep -q 256color); then
+    M4_SCHEME=(
+        machine_fg      red
+        machine_bg      black
 
-    M4_SCHEME[separator]='>'
+        dir_fg          blue
+        dir_bg          white
 
+        usr_fg          cyan
+        usr_bg          blue
+
+        su_fg           white
+        su_bg           red
+
+        git_dirty_fg    red
+        git_dirty_bg    yellow
+
+        git_unknown_fg  white
+        git_unknown_bg  cyan
+
+        git_clean_fg    yellow
+        git_clean_bg    green
+
+        separator       ''
+    )
+else
+    M4_SCHEME=(
+        machine_fg      052
+        machine_bg      234
+
+        dir_fg          025
+        dir_bg          015
+
+        usr_fg          153
+        usr_bg          025
+
+        su_fg           210
+        su_bg           052
+
+        git_dirty_fg    130
+        git_dirty_bg    220
+
+        git_unknown_fg  015
+        git_unknown_bg  153
+
+        git_clean_fg    022
+        git_clean_bg    149
+
+        separator       '\ue0b0'    # Powerline |>
+    )
 fi
 
-
-
-
 # =========== M4_PROMPTSTATE ===================================================
-#   
+#
 #   KEY         MEANING
 #   ----------------------------------------------------------------------------
 #   readonly    Current folder has now write access (0 <=> rw, 1 <=> ro)
@@ -72,38 +88,25 @@ m4_load_promptstate() {
     typeset -A retval
     typeset gitstatus
 
+    retval[git]=0
+    retval[branch]="none"
+    retval[dirty]=0
+    retval[in_work_tree]=0
+
     # Check if current directory is readonly
     [[ -w . ]] && retval[readonly]=0 || retval[readonly]=1
 
-    # Check if we're inside a git work tree
-    if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    # Check if we're inside a versioned folder
+    if is-git; then
+        is-git-head-attached && retval[git]=1 || retval[git]=2
+        retval[branch]=$(get-git-branch-name)
+        is-git-work-tree && retval[in_work_tree]=1
 
-        # Get the branch name. This rev-parse is extremely useful.
-        retval[git]=1
-
-        # But it might be deatched!
-        if $(git symbolic-ref HEAD &>/dev/null); then
-            retval[git]=1
-            retval[branch]=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-        else
-            retval[git]=2 # Detached!
-            retval[branch]="$(git show-ref --head -s --abbrev |head -n1 2> /dev/null)"
-        fi
-
-        # Make sure the branch contains something or the copy onto $1 will fail
         if ! [[ -n $retval[branch] ]]; then
-            retval[branch]="none"
+            retval[branch]="<none>"
         fi
 
-        # Parse clean/dirty flag
-        $(git-clean) && retval[dirty]=0 || retval[dirty]=1
-
-    else
-
-        retval[git]=0
-        retval[branch]="none"
-        retval[dirty]=0
-
+        is-git-clean && retval[dirty]=0 || retval[dirty]=1
     fi
 
     # Now copy onto $1
@@ -117,10 +120,10 @@ m4_load_promptstate() {
 
 segment_git_color() {
     # Check if clean or dirty
-    if [[ $M4_PROMPTSTATE[dirty] -eq 1 ]]; then
-        m4_segment_color git_dirty $1
+    if [[ $M4_PROMPTSTATE[in_work_tree] -eq 1 ]]; then
+        [[ $M4_PROMPTSTATE[dirty] -eq 1 ]] && m4_segment_color git_dirty $1 || m4_segment_color git_clean $1
     else
-        m4_segment_color git_clean $1
+        m4_segment_color git_unknown $1
     fi
 }
 
@@ -146,75 +149,39 @@ segment_user_color() {
 }
 
 segment_machine() {
-
-    # Print the machine name
-    echo -n "%m"
-
-    return 0
-
+    echo -n "%10>…>%m%>>"
 }
 
 segment_user() {
-    # Print just %n aka username
-
     echo -n "%n"
-
-    return 0
 }
-
-
 
 segment_git() {
     # Return failure if we aren't inside a git work tree
-
     if [[ $M4_PROMPTSTATE[git] -eq 0 ]]; then
-
         return 1
-
     elif [[ $M4_PROMPTSTATE[git] -eq 1 ]]; then
-
         # Print branch symbol and branch name
         echo "\ue0a0 $M4_PROMPTSTATE[branch]"
-
     elif [[ $M4_PROMPTSTATE[git] -eq 2 ]]; then
-
         # Print detached head symbol and ref code
         echo "\u27a6 $M4_PROMPTSTATE[branch]"
-
     fi
-    
-    return 0
 }
-
-
 
 segment_dir() {
-
     # Check if writable and print a padlock
     [[ $M4_PROMPTSTATE[readonly] -eq 1 ]] && echo -n "\ue0a2 "   # locket
-
-    # Trim the directory
-    echo -n "%30<…<%~%<<"
-
-    return 0
+    echo -n "%30<…<%~%<<" # Trim the directory
 }
-
-
-
 
 
 # =========== SEGMENT DRAWING FUNC =============================================
 
 
 m4_segment() {
-    # Takes the id of the segment and outputs the body, by calling
-    # `segment_${1}`.
-
-    if whence segment_${1} > /dev/null; then
-
-        segment_${1}
-
-    fi
+    # Takes the id of the segment and outputs the body, by calling `segment_${1}`.
+    whence segment_${1} > /dev/null && segment_${1}
 }
 
 m4_segment_color() {
@@ -232,15 +199,10 @@ m4_segment_color() {
     # The function will look up M4_SCHEME for entries in the form `${1}_fg` and
     # `${1}_bg` to extract the color.
 
-
     # Check if a custom function is available
     if whence segment_${1}_color > /dev/null; then
-
-        # Custom function!
         segment_${1}_color $2
-
     else
-
         case $2 in
             fg) # foreground
                 [[ -n $M4_SCHEME[${1}_fg] ]] && echo -n "%{%F{$M4_SCHEME[${1}_fg]}%}"
@@ -258,67 +220,46 @@ m4_segment_color() {
                 [[ -n $M4_SCHEME[${1}_bg] ]] && echo -n "%{%K{$M4_SCHEME[${1}_bg]}%}"
                 ;;
         esac
-
     fi
-
 }
-
 
 m4_build_prompt() {
     # Prints the final prompt.
     # Enumerate `M4_SEGMENTS`. For each segment, evaluate the body. If the
     # return code is 0, then display it by drawing the separator. Otherwise,
     # go to the next.
-
     local last body
-
     for current in $M4_SEGMENTS; do
-
         # Extract the value
         body=$(m4_segment $current)
-
         # Check if the return code is ok
         if [[ $? -eq 0 ]]; then
-
             # Ok this segment must be drawn.
             if [[ -n $last ]]; then
-
                 # Draw the separator
                 m4_segment_color $last bginv
                 m4_segment_color $current bg
                 echo -n $M4_SCHEME[separator]
                 m4_segment_color $current fg
-
             else
-
                 # Just set the colors
                 m4_segment_color $current fgbg
-
             fi
-
             # Print the body
             echo -n " $body "
-
             # Save it
             last=$current
-
         fi
-
     done
 
     # Finish it!
     if [[ -n $last ]]; then
-
         m4_segment_color $last bginv
         echo -n "%{%k%}$M4_SCHEME[separator]%{%f%} "
-
     else
-
         # Echo an error prompt
         echo -n "NOSEG - %m%# "
-
     fi
-
 }
 
 m4_build_rprompt() {
@@ -326,54 +267,37 @@ m4_build_rprompt() {
     # Enumerate `M4_RSEGMENTS`. For each segment, evaluate the body. If the
     # return code is 0, then display it by drawing the separator. Otherwise,
     # go to the next.
-
     local last body
-
     for current in $M4_RSEGMENTS; do
-
         # Extract the value
         body=$(m4_segment $current)
-
         # Check if the return code is ok
         if [[ $? -eq 0 ]]; then
-
             # Ok this segment must be drawn.
             if [[ -n $last ]]; then
-
                 # Draw the separator
                 m4_segment_color $last bginv
                 m4_segment_color $current bg
                 echo -n $M4_SCHEME[separator]
                 m4_segment_color $current fg
-
             else
-
                 # Use standout mode
                 echo -n "%S"
                 m4_segment_color $current bginv
                 echo -n $M4_SCHEME[separator]
                 echo -n "%s"
                 m4_segment_color $current fgbg
-
             fi
-
             # Print the body
             echo -n " $body "
-
             # Save it
             last=$current
-
         fi
-
     done
-
     # Finish it!
     if [[ -n $last ]]; then
-
         echo -n "%{%k%}%{%f%}"
-
     fi
-
 }
 
 
@@ -393,21 +317,17 @@ m4_prompt_hook() {
 
     # Check if anything is different
     for key in "${(@k)newprompt}"; do
-        
         if ! [[ -n $M4_PROMPTSTATE[$key] ]] ||
            ! [[ $M4_PROMPTSTATE[$key] == $newprompt[$key] ]]; then
             # Set the flag & copy
             update=1
             M4_PROMPTSTATE[$key]=$newprompt[$key]
         fi
-
     done
-
     if [[ $update -eq 1 ]]; then
         PROMPT=$(m4_build_prompt)
         RPROMPT=$(m4_build_rprompt)
     fi
-
 }
 
 

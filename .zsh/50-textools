@@ -1,8 +1,10 @@
 #!/usr/bin/zsh
 do_tex() {
-	JOBNAME="${$(basename "$1")%.*}_$(TZ=Europe/Rome date "+%Y-%m-%d_%H:%M:%S")"
-	JOBNAME=${JOBNAME:gs/ /_/}
+	local SUFFIX
+	is-git && SUFFIX=$(git-current-commit) || SUFFIX=$(TZ=Europe/Rome date "+%Y-%m-%d_%H:%M:%S")
+	TEX_JOBNAME="${$(basename "$1")%.*}_${SUFFIX}"
+	TEX_JOBNAME=${TEX_JOBNAME:gs/ /_/}
 	latexmk -C "$1"
-	latexmk -pdf -jobname="$JOBNAME" "$1"
-	latexmk -c -jobname="$JOBNAME" "$1"
+	latexmk -pdf -jobname="$TEX_JOBNAME" "$1"
+	latexmk -c -jobname="$TEX_JOBNAME" "$1"
 }
