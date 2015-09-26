@@ -5,5 +5,4 @@ do_tex() {
 	latexmk -C "$1"
 	latexmk -pdf -jobname="$JOBNAME" "$1"
 	latexmk -c -jobname="$JOBNAME" "$1"
-	echo -n "${JOBNAME}.pdf"
 }
