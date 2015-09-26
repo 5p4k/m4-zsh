@@ -7,3 +7,5 @@ setopt EXTENDED_GLOB
 for file in ~/.zsh/*~*.disabled; do
     source $file
 done
+
+source /Users/Spak/.iterm2_shell_integration.zsh
