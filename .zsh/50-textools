@@ -1,5 +1,5 @@
 #!/usr/bin/zsh
-do_tex() {
+do-tex() {
 	local SUFFIX
 	is-git && SUFFIX=$(git-current-commit) || SUFFIX=$(TZ=Europe/Rome date "+%Y-%m-%d_%H:%M:%S")
 	TEX_JOBNAME="${$(basename "$1")%.*}_${SUFFIX}"
