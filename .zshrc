@@ -13,4 +13,4 @@ for file in ~/.zsh/*~*.disabled; do
     source $file
 done
 
-source /home/5p4k/.iterm2_shell_integration.zsh
+MAN_POSIXLY_CORRECT=1; export MAN_POSIXLY_CORRECT
