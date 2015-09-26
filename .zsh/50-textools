@@ -1,0 +1,9 @@
+#!/usr/bin/zsh
+do_tex() {
+	JOBNAME="${$(basename "$1")%.*}_$(TZ=Europe/Rome date "+%Y-%m-%d_%H:%M:%S")"
+	JOBNAME=${JOBNAME:gs/ /_/}
+	latexmk -C "$1"
+	latexmk -pdf -jobname="$JOBNAME" "$1"
+	latexmk -c -jobname="$JOBNAME" "$1"
+	echo -n "${JOBNAME}.pdf"
+}
