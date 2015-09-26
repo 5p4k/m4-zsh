@@ -10,51 +10,70 @@ typeset -A  M4_SCHEME       # Color scheme
 # =========== STYLES SETUP =====================================================
 
 M4_SEGMENTS=(
-    user
     git
     dir
 )
 
 M4_RSEGMENTS=(
     machine
-)
-
-M4_SCHEME=(
-
-    machine_fg      052
-    machine_bg      234
-
-    dir_fg          025
-    dir_bg          015         
-    
-    usr_fg          153
-    usr_bg          025
-    
-    su_fg           210
-    su_bg           052
-
-    git_dirty_fg    130
-    git_dirty_bg    220
-    
-    git_clean_fg    022
-    git_clean_bg    149
-
-    separator       '\ue0b0'    # Powerline |>
-
+    user
 )
 
 # No term, or < 256 color
 if ! $(echo $TERM | grep -q 256color); then
+    M4_SCHEME=(
+        machine_fg      red
+        machine_bg      black
 
-    M4_SCHEME[separator]='>'
+        dir_fg          blue
+        dir_bg          white
 
+        usr_fg          cyan
+        usr_bg          blue
+
+        su_fg           white
+        su_bg           red
+
+        git_dirty_fg    red
+        git_dirty_bg    yellow
+
+        git_unknown_fg  white
+        git_unknown_bg  cyan
+
+        git_clean_fg    yellow
+        git_clean_bg    green
+
+        separator       ''
+    )
+else
+    M4_SCHEME=(
+        machine_fg      052
+        machine_bg      234
+
+        dir_fg          025
+        dir_bg          015
+
+        usr_fg          153
+        usr_bg          025
+
+        su_fg           210
+        su_bg           052
+
+        git_dirty_fg    130
+        git_dirty_bg    220
+
+        git_unknown_fg  015
+        git_unknown_bg  153
+
+        git_clean_fg    022
+        git_clean_bg    149
+
+        separator       '\ue0b0'    # Powerline |>
+    )
 fi
 
-
-
-
 # =========== M4_PROMPTSTATE ===================================================
-#   
+#
 #   KEY         MEANING
 #   ----------------------------------------------------------------------------
 #   readonly    Current folder has now write access (0 <=> rw, 1 <=> ro)
@@ -101,10 +120,10 @@ m4_load_promptstate() {
 
 segment_git_color() {
     # Check if clean or dirty
-    if [[ $M4_PROMPTSTATE[dirty] -eq 1 ]]; then
-        m4_segment_color git_dirty $1
+    if [[ $M4_PROMPTSTATE[in_work_tree] -eq 1 ]]; then
+        [[ $M4_PROMPTSTATE[dirty] -eq 1 ]] && m4_segment_color git_dirty $1 || m4_segment_color git_clean $1
     else
-        m4_segment_color git_clean $1
+        m4_segment_color git_unknown $1
     fi
 }
 
