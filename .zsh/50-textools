@@ -4,7 +4,7 @@ do-tex() {
 	is-git && SUFFIX=$(get-git-current-commit) || SUFFIX=$(TZ=Europe/Rome date "+%Y-%m-%d_%H:%M:%S")
 	TEX_JOBNAME="${$(basename "$1")%.*}_${SUFFIX}"
 	TEX_JOBNAME=${TEX_JOBNAME:gs/ /_/}
-	latexmk -C "$1"
-	latexmk -pdf -jobname="$TEX_JOBNAME" "$1"
-	latexmk -c -jobname="$TEX_JOBNAME" "$1"
+	latexmk -e "$pdflatex = '%E -interaction=nonstopmode -shell-escape %S %O'" -C "$1"
+	latexmk -e "$pdflatex = '%E -interaction=nonstopmode -shell-escape %S %O'" -pdf -jobname="$TEX_JOBNAME" "$1"
+	latexmk -e "$pdflatex = '%E -interaction=nonstopmode -shell-escape %S %O'" -c -jobname="$TEX_JOBNAME" "$1"
 }
