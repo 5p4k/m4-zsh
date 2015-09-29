@@ -1,0 +1,6 @@
+#!/usr/bin/zsh
+redo-tex() {
+	latexmk -cd -C "$1"
+	latexmk -cd -e '$pdflatex = '"'pdflatex -shell-escape -interaction=nonstopmode -synctex=1 %S %O'" -f -pdf "$1"
+	echo "${1%.*}"
+}
