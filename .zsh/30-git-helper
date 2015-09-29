@@ -43,3 +43,8 @@ is-git-clean () {
     fi
     return 0
 }
+
+# Just for helping generating cool ids
+get-commit-or-my-date() {
+    is-git && get-git-current-commit || $(TZ=Europe/Rome date "+%Y-%m-%d_%H:%M:%S")
+}
