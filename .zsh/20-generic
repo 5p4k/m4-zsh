@@ -7,14 +7,6 @@ export LANGUAGE="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 export LANG="en_US.UTF-8"
 
-alias subl='~saccardi/Documents/sublime_text_3/sublime_text'
-alias RunChip='python ~saccardi/work/14.1/scripts/RunChip.py -c ~saccardi/config/config.cnf'
-alias conview='/afs/eda/prod/nutshell/14.1/bin-64/nutsh -console_view'
-alias contail='/afs/eda/prod/nutshell/14.1/bin-64/nutsh -console_tail -console_view'
-alias nutshell='/afs/eda/prod/nutshell/14.1/bin-64/nutsh -gui'
-alias chipbench='/afs/eda/prod/hdp/14.1/bin-64/chipbench -gui'
-alias qdip='~haehnle/qdip/bleeding/qdip'
-export CB_VER='/afs/eda/prod'
 function tmux_list_pids() {
 	for s in `tmux list-sessions -F '#{session_name}'` ; do
 		echo -e "\ntmux session name: $s\n--------------------"
@@ -23,3 +15,5 @@ function tmux_list_pids() {
 		done
 	done
 }
+
+zstyle ':completion:*:default' menu select yes
