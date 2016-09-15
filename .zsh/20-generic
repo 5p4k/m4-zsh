@@ -2,6 +2,8 @@
 
 alias airport='/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resources/airport'
 alias ll='ls -AlGh'
+alias ansible=/opt/local/Library/Frameworks/Python.framework/Versions/Current/bin/ansible
+alias ansible-playbook=/opt/local/Library/Frameworks/Python.framework/Versions/Current/bin/ansible-playbook
 alias ls='ls -Gh'
 
 export LANGUAGE="en_US.UTF-8"
