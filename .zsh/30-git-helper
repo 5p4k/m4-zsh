@@ -37,7 +37,7 @@ is-git-clean () {
         # Disallow unstaged changes in the working tree &&
         #   Disallow uncommitted changes in the index
         if ! (git diff-files --quiet --ignore-submodules -- &&
-            git diff-index --cached --quiet HEAD --ignore-submodules --); then
+            git diff-index --cached --quiet HEAD --ignore-submodules -- > /dev/null 2>&1); then
             return 1
         fi
     fi
